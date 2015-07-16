@@ -262,6 +262,7 @@ func aofBodyModifyOperator(p *AOFParser) parserStateFunc {
 
 func aofEmitBodyEvent(p *AOFParser) parserStateFunc {
 
+	// check different rules
 	if _, exists := p.headers[p.curKey]; !exists {
 		p.error("Key '%s' was not defined in the header", p.curKey)
 		return nil
@@ -278,8 +279,8 @@ func aofEmitBodyEvent(p *AOFParser) parserStateFunc {
 		p.values[p.curKey] = value{val: p.curValue, deleted: false}
 
 	case EventSet:
-		_, exists := p.values[p.curKey]
-		if !exists {
+		v, exists := p.values[p.curKey]
+		if !exists || v.deleted {
 			p.error("Key '%s' was not created", p.curKey)
 			return nil
 		}
@@ -288,7 +289,7 @@ func aofEmitBodyEvent(p *AOFParser) parserStateFunc {
 
 	case EventModify:
 		v, exists := p.values[p.curKey]
-		if !exists {
+		if !exists || v.deleted {
 			p.error("Key '%s' was not created", p.curKey)
 			return nil
 		}
@@ -310,11 +311,11 @@ func aofEmitBodyEvent(p *AOFParser) parserStateFunc {
 		p.values[p.curKey] = v
 	}
 
+	// send event to consumer
 	var eventType = p.curEvent
 	if p.headers[p.curKey] == p.curBodyLine {
 		eventType |= EventFinal
 	}
-
 	p.emit(Event{Type: eventType, Key: p.curKey, Value: p.values[p.curKey].val, Deleted: p.values[p.curKey].deleted})
 
 	return aofBodyNextLine

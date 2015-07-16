@@ -316,6 +316,38 @@ CREATE keyX 1000
 keyX 2
 CREATE keyX 1
 DELETE keyX
+MODIFY keyX +1
+`,
+			events: []Event{
+				Event{Type: EventHeader},
+				Event{Type: EventCreate},
+				Event{Type: EventDelete},
+				Event{Type: EventError},
+			},
+			checkError: true,
+			err:        "ERROR at line 5: Key 'keyX' was not created",
+		},
+		{
+			aof: `1
+keyX 2
+CREATE keyX 1
+DELETE keyX
+SET keyX +1
+`,
+			events: []Event{
+				Event{Type: EventHeader},
+				Event{Type: EventCreate},
+				Event{Type: EventDelete},
+				Event{Type: EventError},
+			},
+			checkError: true,
+			err:        "ERROR at line 5: Key 'keyX' was not created",
+		},
+		{
+			aof: `1
+keyX 2
+CREATE keyX 1
+DELETE keyX
 DELETE keyX
 `,
 			events: []Event{
